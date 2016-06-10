@@ -1,5 +1,7 @@
 package com.grishberg.viper_rest_android.domain.common;
 
+import android.app.Service;
+
 import rx.Observable;
 import rx.Scheduler;
 import rx.Subscriber;
@@ -13,6 +15,8 @@ public abstract class Interactor<ResultType, ParameterType>  {
     private final CompositeSubscription subscription = new CompositeSubscription();
     protected final Scheduler jobScheduler;
     private final Scheduler uiScheduler;
+    // сервис, через который будет происходить сетевое взаимодействие
+    protected Service apiService;
 
     public Interactor(Scheduler jobScheduler, Scheduler uiScheduler) {
         this.jobScheduler = jobScheduler;
@@ -34,5 +38,13 @@ public abstract class Interactor<ResultType, ParameterType>  {
 
     public void unsubscribe() {
         subscription.clear();
+    }
+
+    public void onServiceBound(Service service) {
+        apiService = service;
+    }
+
+    public void onServiceUnBound() {
+        apiService = null;
     }
 }

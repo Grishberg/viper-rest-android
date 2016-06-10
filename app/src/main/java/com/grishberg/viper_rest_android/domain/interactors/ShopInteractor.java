@@ -1,6 +1,9 @@
 package com.grishberg.viper_rest_android.domain.interactors;
 
+import android.app.Service;
+
 import com.grishberg.datafacade.data.ListResult;
+import com.grishberg.viper_rest_android.data.ApiService;
 import com.grishberg.viper_rest_android.domain.common.Interactor;
 import com.grishberg.viper_rest_android.domain.models.Shop;
 import com.grishberg.viper_rest_android.domain.interfaces.shops.ShopsDataProvider;
@@ -32,5 +35,10 @@ public class ShopInteractor extends Interactor<ListResult<Shop>, Void> {
     @Override
     protected Observable<ListResult<Shop>> buildObservable(Void parameter) {
         return shopsDataProvider.getAllShops();
+    }
+
+    @Override
+    public void onServiceBound(Service service) {
+
     }
 }

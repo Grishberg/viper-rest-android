@@ -5,12 +5,12 @@ import io.realm.RealmObject;
 /**
  * Created by grishberg on 09.06.16.
  */
-public class Service extends RealmObject{
-    private static final String TAG = Service.class.getSimpleName();
+public class ShopService extends RealmObject{
+    private static final String TAG = ShopService.class.getSimpleName();
     private int id;
     private String name;
 
-    public Service(int id, String name) {
+    public ShopService(int id, String name) {
         this.id = id;
         this.name = name;
     }
