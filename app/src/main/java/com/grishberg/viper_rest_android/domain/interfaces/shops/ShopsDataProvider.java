@@ -11,7 +11,5 @@ import rx.Observable;
  * Created by grishberg on 09.06.16.
  */
 public interface ShopsDataProvider {
-    void onServiceBound(Service service);
-    void onServiceUnBound();
     Observable<ListResult<Shop>> getAllShops();
 }

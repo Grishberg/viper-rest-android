@@ -10,11 +10,14 @@ public class ShopService extends RealmObject{
     private int id;
     private String name;
 
+    public ShopService() {
+    }
+/*
     public ShopService(int id, String name) {
         this.id = id;
         this.name = name;
     }
-
+*/
     public int getId() {
         return id;
     }

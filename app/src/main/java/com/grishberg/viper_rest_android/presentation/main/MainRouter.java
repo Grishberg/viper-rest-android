@@ -7,7 +7,7 @@ import com.grishberg.viper_rest_android.domain.models.Shop;
  */
 public interface MainRouter {
     void openShopsList();
-    void openShedule(int shopId, int specialistId);
+    void openSсhedule(int shopId, int specialistId);
     void openSpecialistList(int shopId);
 
     void showServices(int shopId);

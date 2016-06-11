@@ -10,6 +10,9 @@ import com.grishberg.datafacade.data.ListResult;
 import com.grishberg.viper_rest_android.domain.models.Shop;
 import com.grishberg.viper_rest_android.domain.models.ShopService;
 import com.grishberg.viper_rest_android.domain.models.Specialist;
+import com.grishberg.viper_rest_android.presentation.main.App;
+
+import javax.inject.Inject;
 
 import rx.Observable;
 import rx.Subscription;
@@ -27,15 +30,16 @@ public class RxOrderServiceImpl implements RxApiService {
     private BehaviorSubject<ApiService> orderServiceSubject = BehaviorSubject.create();
     private CompositeSubscription compositeSubscription;
 
-    //TODO: Need to inject
-    private Context appContext;
+    @Inject Context appContext;
 
-    public RxOrderServiceImpl(Context context) {
+    public RxOrderServiceImpl() {
+
+        App.getAppComponent().inject(this);
 
         compositeSubscription = new CompositeSubscription();
 
-        Intent orderServiceIntent = new Intent(); // brevity
-        context.bindService(orderServiceIntent,
+        Intent orderServiceIntent = new Intent(appContext, ApiService.class); // brevity
+        appContext.bindService(orderServiceIntent,
                 orderServiceConnection, Context.BIND_AUTO_CREATE);
     }
 

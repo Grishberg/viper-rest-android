@@ -14,6 +14,9 @@ public class Shop extends RealmObject {
     private long longitude; // долгота
     private String address; // адрес салона
 
+    public Shop() {
+    }
+/*
     public Shop(int id, String name, String bannerUrl, long latitude, long longitude, String address) {
         this.id = id;
         this.name = name;
@@ -22,7 +25,7 @@ public class Shop extends RealmObject {
         this.longitude = longitude;
         this.address = address;
     }
-
+*/
     public int getId() {
         return id;
     }
