@@ -9,12 +9,13 @@ import java.util.List;
  */
 public class ShopsResponse {
     private static final String TAG = ShopsResponse.class.getSimpleName();
-    private int errorCode;
+    private boolean isSuccess;
+    private int error;
     private String errorString;
-    private List<Shop> shopBodies;
+    private List<Shop> result;
 
-    public int getErrorCode() {
-        return errorCode;
+    public int getError() {
+        return error;
     }
 
     public String getErrorString() {
@@ -22,6 +23,10 @@ public class ShopsResponse {
     }
 
     public List<Shop> getShopBodies() {
-        return shopBodies;
+        return result;
+    }
+
+    public boolean isSuccess() {
+        return isSuccess;
     }
 }

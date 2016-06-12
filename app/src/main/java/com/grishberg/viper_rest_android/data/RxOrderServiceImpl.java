@@ -32,7 +32,8 @@ public class RxOrderServiceImpl implements RxApiService {
     private BehaviorSubject<ApiService> orderServiceSubject = BehaviorSubject.create();
     private CompositeSubscription compositeSubscription;
 
-    @Inject Context appContext;
+    @Inject
+    Context appContext;
 
     public RxOrderServiceImpl() {
         Log.d(TAG, "RxOrderServiceImpl: ");
@@ -40,9 +41,6 @@ public class RxOrderServiceImpl implements RxApiService {
 
         compositeSubscription = new CompositeSubscription();
         Intent orderServiceIntent = new Intent(appContext, ApiService.class);
-//        orderServiceIntent.setPackage("com.grishberg.viper_rest_android.data");
-//        orderServiceIntent.setClassName("com.grishberg.viper_rest_android.data",
-//                "com.grishberg.viper_rest_android.data.ApiService");
         appContext.bindService(orderServiceIntent,
                 orderServiceConnection, Context.BIND_AUTO_CREATE);
     }
@@ -63,6 +61,7 @@ public class RxOrderServiceImpl implements RxApiService {
 
     @Override
     public Observable<ListResult<Shop>> getAllShops() {
+        Log.d(TAG, "getAllShops: " + Thread.currentThread());
         final PublishSubject<ListResult<Shop>> shopsSubject = PublishSubject.create();
         Subscription orderSubscription =
                 orderServiceSubject.subscribe(new Action1<ApiService>() {
