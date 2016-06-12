@@ -1,6 +1,7 @@
 package com.grishberg.viper_rest_android.presentation.presenters;
 
 import android.app.Service;
+import android.util.Log;
 
 import com.grishberg.datafacade.data.ListResult;
 import com.grishberg.viper_rest_android.R;
@@ -23,6 +24,7 @@ public class ShopsPresenter extends BaseMainPresenter<ShopsView> {
 
     @Inject
     public ShopsPresenter(ShopInteractor shopInteractor){
+        Log.d(TAG, "ShopsPresenter: ");
         this.shopInteractor = shopInteractor;
     }
 
@@ -40,6 +42,7 @@ public class ShopsPresenter extends BaseMainPresenter<ShopsView> {
 
             @Override
             public void onNext(ListResult<Shop> shops) {
+                Log.d(TAG, "onNext: ");
                 getView().setShops(shops);
             }
         });

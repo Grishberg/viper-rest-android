@@ -1,4 +1,4 @@
-package com.grishberg.datafacade.sevice;
+package com.grishberg.datafacade.service;
 
 import android.app.Service;
 import android.content.Intent;
@@ -20,7 +20,12 @@ public abstract class BaseService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        return binder;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        return true;
     }
 
     /**

@@ -5,7 +5,7 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 
-import com.grishberg.datafacade.sevice.BaseService;
+import com.grishberg.datafacade.service.BaseService;
 import com.grishberg.viper_rest_android.R;
 
 import java.lang.annotation.Annotation;
