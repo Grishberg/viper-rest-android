@@ -11,7 +11,6 @@ import com.grishberg.viper_rest_android.domain.models.RegistrationContainer;
 import com.grishberg.viper_rest_android.presentation.injection.AppModule;
 import com.grishberg.viper_rest_android.presentation.injection.AuthStorageModule;
 import com.grishberg.viper_rest_android.presentation.injection.DaggerAppComponent;
-import com.grishberg.viper_rest_android.presentation.injection.DaggerRestComponent;
 import com.grishberg.viper_rest_android.presentation.injection.TestRestModule;
 import com.grishberg.viper_rest_android.presentation.main.App;
 
@@ -55,12 +54,7 @@ public class AuthTest {
                         .restModule(new TestRestModule(HTTP_TEST_COM))
                         .authStorageModule(new AuthStorageModule(app))
                         .build()
-                ,
-                DaggerRestComponent
-                        .builder()
-                        .restModule(new TestRestModule(HTTP_TEST_COM))
-                        .authStorageModule(new AuthStorageModule(app))
-                        .build());
+               );
     }
 
     /**

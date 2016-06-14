@@ -54,7 +54,6 @@ public class ApiService extends BaseService {
     @Override
     public void onCreate() {
         Log.d(TAG, "onCreate: ");
-        App.getRestComponent().inject(this);
         App.getAppComponent().inject(this);
     }
 

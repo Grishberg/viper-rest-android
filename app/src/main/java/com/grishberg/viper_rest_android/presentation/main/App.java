@@ -10,8 +10,6 @@ import com.grishberg.viper_rest_android.presentation.injection.AppComponent;
 import com.grishberg.viper_rest_android.presentation.injection.AppModule;
 import com.grishberg.viper_rest_android.presentation.injection.AuthStorageModule;
 import com.grishberg.viper_rest_android.presentation.injection.DaggerAppComponent;
-import com.grishberg.viper_rest_android.presentation.injection.DaggerRestComponent;
-import com.grishberg.viper_rest_android.presentation.injection.RestComponent;
 import com.grishberg.viper_rest_android.presentation.injection.RestModule;
 
 /**
@@ -23,7 +21,6 @@ public class App extends Application implements AuthStorageService {
     public static final String NAME = "com.grishberg.viper_rest_android";
 
     protected static AppComponent appComponent;
-    protected static RestComponent restComponent;
     private SharedPreferences prefs;
 
     @Override
@@ -38,20 +35,12 @@ public class App extends Application implements AuthStorageService {
                         .appModule(new AppModule(this))
                         .restModule(new RestModule(ApiConst.END_POINT))
                         .authStorageModule(new AuthStorageModule(this))
-                        .build(),
-
-                DaggerRestComponent
-                        .builder()
-                        .restModule(new RestModule(ApiConst.END_POINT))
-                        .authStorageModule(new AuthStorageModule(this))
                         .build()
         );
     }
 
-    public void initComponents(AppComponent appComponent, RestComponent restComponent) {
+    public void initComponents(AppComponent appComponent) {
         this.appComponent = appComponent;
-
-        this.restComponent = restComponent;
     }
 
     @Override
@@ -66,9 +55,5 @@ public class App extends Application implements AuthStorageService {
 
     public static AppComponent getAppComponent() {
         return appComponent;
-    }
-
-    public static RestComponent getRestComponent() {
-        return restComponent;
     }
 }
