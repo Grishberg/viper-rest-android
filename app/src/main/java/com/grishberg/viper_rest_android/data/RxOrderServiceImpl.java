@@ -8,6 +8,7 @@ import android.os.IBinder;
 import android.util.Log;
 
 import com.grishberg.datafacade.data.ListResult;
+import com.grishberg.viper_rest_android.domain.models.RegistrationContainer;
 import com.grishberg.viper_rest_android.domain.models.Shop;
 import com.grishberg.viper_rest_android.domain.models.ShopService;
 import com.grishberg.viper_rest_android.domain.models.Specialist;
@@ -16,6 +17,7 @@ import com.grishberg.viper_rest_android.presentation.main.App;
 import javax.inject.Inject;
 
 import rx.Observable;
+import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
 import rx.subjects.BehaviorSubject;
@@ -28,14 +30,16 @@ import rx.subscriptions.CompositeSubscription;
  */
 public class RxOrderServiceImpl implements RxApiService {
     private static final String TAG = RxOrderServiceImpl.class.getSimpleName();
-    // IBoundOrderService is the AIDL service
+
     private BehaviorSubject<ApiService> orderServiceSubject = BehaviorSubject.create();
     private CompositeSubscription compositeSubscription;
+    private ApiService apiService;
+    private boolean isBound;
+    private final Object monitor = new Object();
 
     @Inject
     Context appContext;
 
-    @Inject
     public RxOrderServiceImpl() {
         Log.d(TAG, "RxOrderServiceImpl: ");
         App.getAppComponent().inject(this);
@@ -45,23 +49,54 @@ public class RxOrderServiceImpl implements RxApiService {
                 orderServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
+    /**
+     * Обработка подключения к сервису
+     */
     private ServiceConnection orderServiceConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
             Log.d(TAG, "onServiceConnected: ");
-            ApiService apiService = (ApiService) ((ApiService.ApiServiceBinder) service).getService();
+            isBound = true;
+            apiService = (ApiService) ((ApiService.ApiServiceBinder) service).getService();
             orderServiceSubject.onNext(apiService);
+            // если было ожидание подключения к сервису - продолжить выполнение.
+            synchronized (monitor) {
+                monitor.notifyAll();
+            }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            isBound = false;
             orderServiceSubject.onCompleted();
+            synchronized (monitor) {
+                monitor.notifyAll();
+            }
         }
     };
 
+    /**
+     * Подождать пока не подключимся к севрису
+     */
+    private void checkConnectionToService() {
+        synchronized (monitor) {
+            while (!isBound) {
+                try {
+                    monitor.wait();
+                } catch (InterruptedException e) {
+                    Log.e(TAG, "checkConnectionToService: ", e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Формирование Observable в ГЛАВНОМ потоке
+     *
+     * @return
+     */
     @Override
     public Observable<ListResult<Shop>> getAllShops() {
-        Log.d(TAG, "getAllShops: " + Thread.currentThread());
         final PublishSubject<ListResult<Shop>> shopsSubject = PublishSubject.create();
         Subscription orderSubscription =
                 orderServiceSubject.subscribe(new Action1<ApiService>() {
@@ -114,27 +149,24 @@ public class RxOrderServiceImpl implements RxApiService {
     }
 
     @Override
-    public Observable<String> register(String login, String password, String name,
-                                       int sex, int age) {
-        Log.d(TAG, "register: " + login);
-        final PublishSubject<String> registerSubject = PublishSubject.create();
-        Subscription orderSubscription =
-                orderServiceSubject.subscribe(new Action1<ApiService>() {
-                    @Override
-                    public void call(ApiService apiService) {
-                        compositeSubscription.add(apiService
-                                .register(login, password, name, sex, age));
-                    }
-                }, new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        registerSubject.onError(throwable);
-                    }
-                });
+    public Observable<String> register(RegistrationContainer registrationContainer) {
+        Log.d(TAG, "register: " + registrationContainer);
 
-        compositeSubscription.add(orderSubscription);
-
-        return registerSubject.asObservable();
+        return Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> observer) {
+                Log.d(TAG, "call: " + Thread.currentThread());
+                // проверить подключение к сервису, если не было - дождаться
+                checkConnectionToService();
+                try {
+                    if (!observer.isUnsubscribed()) {
+                        apiService.register(observer, registrationContainer);
+                    }
+                } catch (Exception e) {
+                    observer.onError(e);
+                }
+            }
+        });
     }
 
     public void close() throws Exception {

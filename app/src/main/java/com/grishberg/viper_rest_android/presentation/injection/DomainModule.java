@@ -23,7 +23,7 @@ public class DomainModule {
     @Singleton
     @Named(JOB)
     public Scheduler provideJobScheduler() {
-        return Schedulers.computation();
+        return Schedulers.io();
     }
 
     @Provides

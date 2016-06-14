@@ -18,9 +18,11 @@ import java.net.URI;
  */
 public class TestStubInterceptor implements Interceptor {
     private static final String TAG = TestStubInterceptor.class.getSimpleName();
+    public static final String TEST_REFRESH_TOKEN = "test_refresh_token";
+    public static final String TEST_ACCESS_TOKEN = "test_access_token";
     // FAKE RESPONSES.
-    private final static String SUCCES_REGISTER = "{\"success\":true,\"result\":{\"refreshToken\":\"111\",\"accessToken\":\"222\"}}";
-    private static final String SUCCESS_AUTH = "{\"success\":true,\"result\":{\"refreshToken\":\"444\",\"accessToken\":\"333\"}}";
+    private final static String SUCCESS_REGISTER = "{\"success\":true,\"result\":{\"refreshToken\":\""+TEST_REFRESH_TOKEN+"\",\"accessToken\":\""+TEST_ACCESS_TOKEN+"\"}}";
+    private static final String SUCCESS_AUTH = "{\"success\":true,\"result\":{\"refreshToken\":\""+TEST_REFRESH_TOKEN+"\",\"accessToken\":\""+TEST_ACCESS_TOKEN+"\"}}";
     ;
 
     @Override
@@ -38,7 +40,7 @@ public class TestStubInterceptor implements Interceptor {
         switch (path) {
             // регистрация
             case ApiConst.Methods.REGISTER:
-                responseString = SUCCES_REGISTER;
+                responseString = SUCCESS_REGISTER;
                 break;
             case ApiConst.Methods.AUTH:
                 responseString = SUCCESS_AUTH;

@@ -1,31 +1,25 @@
 package com.grishberg.viper_rest_android;
 
-import android.content.Context;
 import android.support.test.InstrumentationRegistry;
-import android.support.test.rule.ServiceTestRule;
 import android.support.test.runner.AndroidJUnit4;
-import android.test.ActivityInstrumentationTestCase2;
 import android.test.suitebuilder.annotation.SmallTest;
 
 import com.grishberg.viper_rest_android.data.providers.RegisterDataProviderImpl;
+import com.grishberg.viper_rest_android.data.rest.TestStubInterceptor;
 import com.grishberg.viper_rest_android.domain.interfaces.auth.RegisterDataProvider;
-import com.grishberg.viper_rest_android.presentation.injection.AppComponent;
+import com.grishberg.viper_rest_android.domain.models.RegistrationContainer;
 import com.grishberg.viper_rest_android.presentation.injection.AppModule;
 import com.grishberg.viper_rest_android.presentation.injection.AuthStorageModule;
 import com.grishberg.viper_rest_android.presentation.injection.DaggerAppComponent;
 import com.grishberg.viper_rest_android.presentation.injection.DaggerRestComponent;
-import com.grishberg.viper_rest_android.presentation.injection.RestComponent;
 import com.grishberg.viper_rest_android.presentation.injection.TestRestModule;
 import com.grishberg.viper_rest_android.presentation.main.App;
-import com.grishberg.viper_rest_android.presentation.main.MainActivity;
 
 import junit.framework.Assert;
 
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
 
 import java.util.List;
 
@@ -38,8 +32,8 @@ import rx.schedulers.TestScheduler;
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class RegTest {
-    private static final String TAG = RegTest.class.getSimpleName();
+public class AuthTest {
+    private static final String TAG = AuthTest.class.getSimpleName();
     public static final String TEST_LOGIN = "test";
     public static final String TEST_PASSWORD = "test";
     public static final String TEST_NAME = "test";
@@ -47,10 +41,11 @@ public class RegTest {
     public static final int TEST_AGE = 31;
     public static final String HTTP_TEST_COM = "http://test.com";
 
-
-    @Rule
-    public final ServiceTestRule mServiceRule = new ServiceTestRule();
-
+    /**
+     * Инициализация тестового Retrofit сервиса
+     *
+     * @throws Exception
+     */
     @Before
     public void setUp() throws Exception {
         App app = (App) InstrumentationRegistry.getTargetContext().getApplicationContext();
@@ -68,21 +63,30 @@ public class RegTest {
                         .build());
     }
 
+    /**
+     * Тестирование регистрации
+     *
+     * @throws Exception
+     */
     @Test
-    public void testRegister() throws Exception{
+    public void testRegister() throws Exception {
         RegisterDataProvider registerDataProvider = new RegisterDataProviderImpl();
         int times = 10;
         TestScheduler testScheduler = Schedulers.test();
         TestSubscriber<String> testSubscriber = new TestSubscriber<>();
 
         registerDataProvider
-                .register(TEST_LOGIN, TEST_PASSWORD, TEST_NAME, TEST_SEX, TEST_SEX)
+                .register(new RegistrationContainer(
+                        TEST_LOGIN,
+                        TEST_PASSWORD,
+                        TEST_NAME, TEST_SEX, TEST_SEX))
                 .subscribe(testSubscriber);
 
         testSubscriber.assertNoErrors();
         List<String> refreshToken = testSubscriber.getOnNextEvents();
 
         Assert.assertNotNull(refreshToken);
-        Thread.sleep(15000);
+        Assert.assertEquals("test refresh token not equals",
+                TestStubInterceptor.TEST_REFRESH_TOKEN, refreshToken.get(0));
     }
 }

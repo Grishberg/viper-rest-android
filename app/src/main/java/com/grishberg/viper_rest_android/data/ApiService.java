@@ -13,6 +13,7 @@ import com.grishberg.viper_rest_android.data.rest.response.AuthResponse;
 import com.grishberg.viper_rest_android.data.rest.response.ShopsResponse;
 import com.grishberg.viper_rest_android.domain.ApiConst;
 import com.grishberg.viper_rest_android.domain.interfaces.AuthStorageService;
+import com.grishberg.viper_rest_android.domain.models.RegistrationContainer;
 import com.grishberg.viper_rest_android.domain.models.Shop;
 import com.grishberg.viper_rest_android.domain.models.Specialist;
 import com.grishberg.viper_rest_android.presentation.main.App;
@@ -45,7 +46,7 @@ public class ApiService extends BaseService {
     @Inject
     AuthStorageService authStorageService;
 
-    private String accessToken;
+    private volatile String accessToken;
 
     public ApiService() {
     }
@@ -168,29 +169,48 @@ public class ApiService extends BaseService {
         return subscription;
     }
 
-    public Subscription register(String login, String password, String name,
-                                 int sex, int age) {
-        final Subscription subscription =
-                createRegisterRequestObservable(login, password, name, sex, age)//создали Observable с запросом
-                        .timeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS) //поставили таймаут
-                        .retry(RETRY_COUNT_FOR_REQUEST) //поставили кол-во повторов
-                        .onErrorReturn(new Func1<Throwable, String>() {
-                            @Override
-                            public String call(Throwable throwable) {
-                                Log.e(TAG, "call: ", throwable);
-                                return null;
-                            }
-                        })
-                        .doOnError(new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                Log.e(TAG, "call: ", throwable);
-                            }
-                        })
-                        .subscribeOn(Schedulers.computation())
-                        .subscribe();
+    /**
+     * Запрос на регистрацию, выполняется НЕ в UI потоке
+     * @param observer наблюдатель для вывода результата и ошибок
+     * @param registrationContainer параметры для регистрации
+     */
+    public void register(Subscriber<? super String> observer,
+                           RegistrationContainer registrationContainer) {
 
-        return subscription;
+        Throwable lastError = null;
+        for (int i = 0; i < RETRY_COUNT_FOR_REQUEST; i++) {
+            try {
+                Call<AuthResponse> responseCall = retrofitService
+                        .register(registrationContainer.getLogin(),
+                                registrationContainer.getPassword(),
+                                registrationContainer.getName(),
+                                registrationContainer.getSex(),
+                                registrationContainer.getAge());
+                Response<AuthResponse> response = responseCall.execute();
+                AuthResponse responseBody = response.body();
+                if (responseBody != null && !responseBody.isSuccess()) {
+                    lastError = new BadAccessTokenException(responseBody.getErrorString());
+                    observer.onError(lastError);
+                    continue;
+                }
+                if (responseBody == null || responseBody.getResult() == null) {
+                    lastError = new NullPointerException();
+                    observer.onError(lastError);
+                    continue;
+                }
+                // обновить токен в сервисе для дальнейшей работы
+                accessToken = responseBody.getResult().getAccessToken();
+                // передать результат
+                observer.onNext(responseBody.getResult().getRefreshToken());
+                observer.onCompleted();
+                return;
+            } catch (IOException e) {
+                Log.e(TAG, "register: ", e);
+                lastError = e;
+            }
+        }
+        observer.onError(lastError);
+        observer.onCompleted();
     }
 
     private Observable<String> createAuthRequestObservable(String login, String password) {

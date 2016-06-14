@@ -1,5 +1,7 @@
 package com.grishberg.viper_rest_android.data.rest.response;
 
+import com.google.gson.annotations.SerializedName;
+
 /**
  * Created by grishberg on 12.06.16.
  * Ответ от сервера после авторизации или обновления токена
@@ -28,7 +30,9 @@ public class AuthResponse {
     }
 
     public static class AuthBody {
+        @SerializedName("accessToken")
         private String accessToken;
+        @SerializedName("refreshToken")
         private String refreshToken;
 
         public String getAccessToken() {

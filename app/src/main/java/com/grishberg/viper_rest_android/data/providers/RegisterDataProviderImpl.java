@@ -2,6 +2,7 @@ package com.grishberg.viper_rest_android.data.providers;
 
 import com.grishberg.viper_rest_android.data.RxApiService;
 import com.grishberg.viper_rest_android.domain.interfaces.auth.RegisterDataProvider;
+import com.grishberg.viper_rest_android.domain.models.RegistrationContainer;
 import com.grishberg.viper_rest_android.presentation.main.App;
 
 import javax.inject.Inject;
@@ -22,7 +23,7 @@ public class RegisterDataProviderImpl implements RegisterDataProvider {
     }
 
     @Override
-    public Observable<String> register(String login, String password, String name, int sex, int age) {
-        return apiService.register(login, password, name, sex, age);
+    public Observable<String> register(RegistrationContainer registrationContainer) {
+        return apiService.register(registrationContainer);
     }
 }
