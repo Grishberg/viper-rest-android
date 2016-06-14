@@ -12,6 +12,12 @@ import rx.Observable;
  */
 public interface RxApiService {
     Observable<ListResult<Shop>> getAllShops();
+
     Observable<ListResult<ShopService>> getShopService(int shoId);
+
     Observable<ListResult<Specialist>> getSpecialistsForService(int specialistId);
+
+    Observable<String> getAuth(String login, String password);
+
+    Observable<String> register(String login, String password, String name, int sex, int age);
 }

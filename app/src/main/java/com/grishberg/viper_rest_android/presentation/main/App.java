@@ -1,10 +1,14 @@
 package com.grishberg.viper_rest_android.presentation.main;
 
 import android.app.Application;
+import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.grishberg.viper_rest_android.domain.ApiConst;
+import com.grishberg.viper_rest_android.domain.interfaces.AuthStorageService;
 import com.grishberg.viper_rest_android.presentation.injection.AppComponent;
 import com.grishberg.viper_rest_android.presentation.injection.AppModule;
+import com.grishberg.viper_rest_android.presentation.injection.AuthStorageModule;
 import com.grishberg.viper_rest_android.presentation.injection.DaggerAppComponent;
 import com.grishberg.viper_rest_android.presentation.injection.DaggerRestComponent;
 import com.grishberg.viper_rest_android.presentation.injection.RestComponent;
@@ -13,26 +17,54 @@ import com.grishberg.viper_rest_android.presentation.injection.RestModule;
 /**
  * Created by grishberg on 11.06.16.
  */
-public class App extends Application {
+public class App extends Application implements AuthStorageService {
     private static final String TAG = App.class.getSimpleName();
+    private static final String REFRESH_TOKEN_KEY = "com.grishberg.viper_rest_android.refreshToken";
+    public static final String NAME = "com.grishberg.viper_rest_android";
 
-    private static AppComponent appComponent;
-    private static RestComponent restComponent;
+    protected static AppComponent appComponent;
+    protected static RestComponent restComponent;
+    private SharedPreferences prefs;
+
     @Override
     public void onCreate() {
         super.onCreate();
 
-        appComponent = DaggerAppComponent
-                .builder()
-                .appModule(new AppModule(this))
-                .build();
-        restComponent = DaggerRestComponent
-                .builder()
-                .restModule(new RestModule(ApiConst.END_POINT))
-                .build();
+        prefs = this.getSharedPreferences(
+                NAME, Context.MODE_PRIVATE);
+
+        initComponents(DaggerAppComponent
+                        .builder()
+                        .appModule(new AppModule(this))
+                        .restModule(new RestModule(ApiConst.END_POINT))
+                        .authStorageModule(new AuthStorageModule(this))
+                        .build(),
+
+                DaggerRestComponent
+                        .builder()
+                        .restModule(new RestModule(ApiConst.END_POINT))
+                        .authStorageModule(new AuthStorageModule(this))
+                        .build()
+        );
     }
 
-    public static AppComponent getAppComponent(){
+    public void initComponents(AppComponent appComponent, RestComponent restComponent) {
+        this.appComponent = appComponent;
+
+        this.restComponent = restComponent;
+    }
+
+    @Override
+    public String getRefreshToken() {
+        return prefs.getString(REFRESH_TOKEN_KEY, null);
+    }
+
+    @Override
+    public void setRefreshToken(String refreshToken) {
+        prefs.edit().putString(REFRESH_TOKEN_KEY, refreshToken).apply();
+    }
+
+    public static AppComponent getAppComponent() {
         return appComponent;
     }
 

@@ -10,6 +10,8 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.grishberg.viper_rest_android.data.rest.HttpLoggingInterceptor;
 import com.grishberg.viper_rest_android.data.rest.RestRetrofitService;
+import com.grishberg.viper_rest_android.domain.interfaces.AuthStorageService;
+import com.grishberg.viper_rest_android.presentation.main.App;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.OkHttpClient;
 
@@ -27,26 +29,19 @@ import retrofit.Retrofit;
 public class RestModule {
     private static final String TAG = RestModule.class.getSimpleName();
 
-    String mBaseUrl;
+    private String mBaseUrl;
 
     // Constructor needs one parameter to instantiate.
     public RestModule(String baseUrl) {
         this.mBaseUrl = baseUrl;
     }
 
-    @Provides
-    @Singleton
-        // Application reference must come from AppModule.class
-    SharedPreferences providesSharedPreferences(Context context) {
-        return PreferenceManager.getDefaultSharedPreferences(context);
-    }
-
     /**
      * interceptor для логирования
+     *
      * @return
      */
-    @Provides
-    @Singleton
+
     Interceptor provideInterceptor() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
@@ -63,7 +58,8 @@ public class RestModule {
 
     @Provides
     @Singleton
-    OkHttpClient provideOkHttpClient(Interceptor interceptor) {
+    OkHttpClient provideOkHttpClient() {
+        Interceptor interceptor = provideInterceptor();
         OkHttpClient client = new OkHttpClient();
         client.interceptors().add(interceptor);
         return client;

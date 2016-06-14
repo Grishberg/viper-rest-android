@@ -57,14 +57,6 @@ public abstract class BaseFragment extends Fragment {
         getPresenter().onStop();
     }
 
-    public void onServiceBound(Service service){
-        getPresenter().onServiceBound(service);
-    }
-
-    public void onServiceUnBound(){
-        getPresenter().onServiceUnbound();
-    }
-
     @Override
     public void onDestroyView() {
         ButterKnife.unbind(this);

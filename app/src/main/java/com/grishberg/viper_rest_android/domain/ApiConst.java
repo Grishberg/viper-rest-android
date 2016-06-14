@@ -11,6 +11,9 @@ public final class ApiConst {
         public static final String LOGIN = "login";
         public static final String PASSWORD = "password";
         public static final String REFRESH_TOKEN = "refreshToken";
+        public static final String NAME = "name";
+        public static final String SEX = "sex";
+        public static final String AGE = "age";
     }
 
     public static final class Methods{

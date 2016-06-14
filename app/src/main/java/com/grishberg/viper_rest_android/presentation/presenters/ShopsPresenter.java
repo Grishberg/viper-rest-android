@@ -53,16 +53,6 @@ public class ShopsPresenter extends BaseMainPresenter<ShopsView> {
         shopInteractor.unsubscribe();
     }
 
-    @Override
-    public void onServiceBound(Service service) {
-        shopInteractor.onServiceBound(service);
-    }
-
-    @Override
-    public void onServiceUnbound() {
-        shopInteractor.onServiceUnBound();
-    }
-
     public void shopSelected(int shopId) {
         getRouter().showServices(shopId);
     }

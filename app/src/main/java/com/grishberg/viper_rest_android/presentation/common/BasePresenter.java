@@ -14,13 +14,6 @@ public abstract class BasePresenter<View, Router>  {
 
     public abstract void onStop();
 
-    /**
-     * Событие возникает когда удалось прибиндиться к сервису
-     * @param service
-     */
-    public abstract void onServiceBound(Service service);
-    public abstract void onServiceUnbound();
-
     public View getView() {
         return view;
     }

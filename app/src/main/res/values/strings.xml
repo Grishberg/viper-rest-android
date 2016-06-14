@@ -6,4 +6,6 @@
     <string name="error">Some error</string>
     <string name="new_message_comming">Shops downloaded</string>
     <string name="shops">Каталог салонов</string>
+    <string name="auth">Авторизация</string>
+    <string name="wrong_password">Неверный логин или пароль</string>
 </resources>

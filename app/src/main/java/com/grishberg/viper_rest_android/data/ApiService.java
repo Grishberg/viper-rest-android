@@ -2,6 +2,7 @@ package com.grishberg.viper_rest_android.data;
 
 import android.app.Service;
 import android.os.AsyncTask;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.grishberg.datafacade.data.ListResult;
@@ -11,6 +12,7 @@ import com.grishberg.viper_rest_android.data.rest.errors.BadAccessTokenException
 import com.grishberg.viper_rest_android.data.rest.response.AuthResponse;
 import com.grishberg.viper_rest_android.data.rest.response.ShopsResponse;
 import com.grishberg.viper_rest_android.domain.ApiConst;
+import com.grishberg.viper_rest_android.domain.interfaces.AuthStorageService;
 import com.grishberg.viper_rest_android.domain.models.Shop;
 import com.grishberg.viper_rest_android.domain.models.Specialist;
 import com.grishberg.viper_rest_android.presentation.main.App;
@@ -43,8 +45,7 @@ public class ApiService extends BaseService {
     @Inject
     AuthStorageService authStorageService;
 
-    private String accessToken = "123";
-    private String refreshToken = "123";
+    private String accessToken;
 
     public ApiService() {
     }
@@ -53,6 +54,7 @@ public class ApiService extends BaseService {
     public void onCreate() {
         Log.d(TAG, "onCreate: ");
         App.getRestComponent().inject(this);
+        App.getAppComponent().inject(this);
     }
 
     /**
@@ -94,6 +96,9 @@ public class ApiService extends BaseService {
             @Override
             public void call(Subscriber<? super List<Shop>> subscriber) {
                 try {
+                    if (TextUtils.isEmpty(accessToken)) {
+                        doRefreshToken();
+                    }
                     Call<ShopsResponse> responseCall = retrofitService.getShops(accessToken);
                     Response<ShopsResponse> response = responseCall.execute();
                     ShopsResponse responseBody = response.body();
@@ -136,15 +141,135 @@ public class ApiService extends BaseService {
     }
 
     //------------------ AUTH --------------------
+    public Subscription auth(String login, String password) {
+        final Subscription subscription =
+                createAuthRequestObservable(login, password)//создали Observable с запросом
+                        .timeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS) //поставили таймаут
+                        .retry(RETRY_COUNT_FOR_REQUEST) //поставили кол-во повторов
+                        .onErrorReturn(new Func1<Throwable, String>() {
+                            @Override
+                            public String call(Throwable throwable) {
+                                Log.e(TAG, "call: ", throwable);
+                                return null;
+                            }
+                        })
+                        .doOnError(new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                Log.e(TAG, "call: ", throwable);
+                                if (throwable instanceof BadAccessTokenException) {
+                                    //Нужно обновить токен
+                                }
+                            }
+                        })
+                        .subscribeOn(Schedulers.computation())
+                        .subscribe();
 
-    public
+        return subscription;
+    }
+
+    public Subscription register(String login, String password, String name,
+                                 int sex, int age) {
+        final Subscription subscription =
+                createRegisterRequestObservable(login, password, name, sex, age)//создали Observable с запросом
+                        .timeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS) //поставили таймаут
+                        .retry(RETRY_COUNT_FOR_REQUEST) //поставили кол-во повторов
+                        .onErrorReturn(new Func1<Throwable, String>() {
+                            @Override
+                            public String call(Throwable throwable) {
+                                Log.e(TAG, "call: ", throwable);
+                                return null;
+                            }
+                        })
+                        .doOnError(new Action1<Throwable>() {
+                            @Override
+                            public void call(Throwable throwable) {
+                                Log.e(TAG, "call: ", throwable);
+                            }
+                        })
+                        .subscribeOn(Schedulers.computation())
+                        .subscribe();
+
+        return subscription;
+    }
+
+    private Observable<String> createAuthRequestObservable(String login, String password) {
+        return Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                try {
+                    Call<AuthResponse> responseCall = retrofitService.auth(login, password);
+                    Response<AuthResponse> response = responseCall.execute();
+                    AuthResponse responseBody = response.body();
+                    if (responseBody != null && !responseBody.isSuccess()) {
+                        subscriber.onError(new BadAccessTokenException(responseBody.getErrorString()));
+                        return;
+                    }
+                    if (responseBody == null) {
+                        subscriber.onError(new NullPointerException());
+                        return;
+                    }
+                    subscriber.onNext(responseBody.getResult().getRefreshToken());
+                    accessToken = responseBody.getResult().getAccessToken();
+                    subscriber.onCompleted();
+                } catch (IOException e) {
+                    Log.e(TAG, "call: ", e);
+                    subscriber.onError(e);
+                }
+            }
+        });
+    }
+
+    /**
+     * Создать Observable для регистрации нового пользователя
+     *
+     * @param login
+     * @param password
+     * @param name
+     * @param sex
+     * @param age
+     * @return
+     */
+    private Observable<String> createRegisterRequestObservable(String login,
+                                                               String password,
+                                                               String name,
+                                                               int sex,
+                                                               int age
+    ) {
+        return Observable.create(new Observable.OnSubscribe<String>() {
+            @Override
+            public void call(Subscriber<? super String> subscriber) {
+                try {
+                    Call<AuthResponse> responseCall = retrofitService
+                            .register(login, password, name, sex, age);
+                    Response<AuthResponse> response = responseCall.execute();
+                    AuthResponse responseBody = response.body();
+                    if (responseBody != null && !responseBody.isSuccess()) {
+                        subscriber.onError(new BadAccessTokenException(responseBody.getErrorString()));
+                        return;
+                    }
+                    if (responseBody == null) {
+                        subscriber.onError(new NullPointerException());
+                        return;
+                    }
+                    subscriber.onNext(responseBody.getResult().getRefreshToken());
+                    accessToken = responseBody.getResult().getAccessToken();
+                    subscriber.onCompleted();
+                } catch (IOException e) {
+                    Log.e(TAG, "call: ", e);
+                    subscriber.onError(e);
+                }
+            }
+        });
+    }
+
     /**
      * Вернуть рефреш токен для обновления accessToken
      *
      * @return
      */
     private String getRefreshToken() {
-        return refreshToken;
+        return authStorageService.getRefreshToken();
     }
 
     /**
@@ -162,6 +287,7 @@ public class ApiService extends BaseService {
             return false;
         }
         accessToken = authResponse.getResult().getAccessToken();
-        refreshToken = authResponse.getResult().getRefreshToken();
+        authStorageService.setRefreshToken(authResponse.getResult().getRefreshToken());
+        return true;
     }
 }

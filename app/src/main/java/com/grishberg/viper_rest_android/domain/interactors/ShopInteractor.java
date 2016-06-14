@@ -36,9 +36,4 @@ public class ShopInteractor extends Interactor<ListResult<Shop>, Void> {
     protected Observable<ListResult<Shop>> buildObservable(Void parameter) {
         return shopsDataProvider.getAllShops();
     }
-
-    @Override
-    public void onServiceBound(Service service) {
-
-    }
 }

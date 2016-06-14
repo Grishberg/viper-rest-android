@@ -24,6 +24,16 @@ public interface RestRetrofitService {
     Call<AuthResponse> refreshToken(@Field(ApiConst.Fields.REFRESH_TOKEN) String refreshToken);
 
     @FormUrlEncoded
+    @POST(ApiConst.Methods.REGISTER)
+    Call<AuthResponse> register(@Field(ApiConst.Fields.LOGIN) String login,
+                                @Field(ApiConst.Fields.PASSWORD) String password,
+                                @Field(ApiConst.Fields.NAME) String name,
+                                @Field(ApiConst.Fields.SEX) int sex,
+                                @Field(ApiConst.Fields.AGE) int age
+                                );
+
+
+    @FormUrlEncoded
     @POST(ApiConst.Methods.LIST_SHOPS)
     Call<ShopsResponse> getShops(@Field(ApiConst.Fields.ACCESS_TOKEN) String accessToken);
 

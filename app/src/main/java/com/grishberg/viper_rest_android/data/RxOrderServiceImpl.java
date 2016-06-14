@@ -35,10 +35,10 @@ public class RxOrderServiceImpl implements RxApiService {
     @Inject
     Context appContext;
 
+    @Inject
     public RxOrderServiceImpl() {
         Log.d(TAG, "RxOrderServiceImpl: ");
         App.getAppComponent().inject(this);
-
         compositeSubscription = new CompositeSubscription();
         Intent orderServiceIntent = new Intent(appContext, ApiService.class);
         appContext.bindService(orderServiceIntent,
@@ -89,6 +89,52 @@ public class RxOrderServiceImpl implements RxApiService {
     @Override
     public Observable<ListResult<Specialist>> getSpecialistsForService(int specialistId) {
         return null;
+    }
+
+    @Override
+    public Observable<String> getAuth(String login, String password) {
+        Log.d(TAG, "getAuth: " + login);
+        final PublishSubject<String> authSubject = PublishSubject.create();
+        Subscription orderSubscription =
+                orderServiceSubject.subscribe(new Action1<ApiService>() {
+                    @Override
+                    public void call(ApiService apiService) {
+                        compositeSubscription.add(apiService.auth(login, password));
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        authSubject.onError(throwable);
+                    }
+                });
+
+        compositeSubscription.add(orderSubscription);
+
+        return authSubject.asObservable();
+    }
+
+    @Override
+    public Observable<String> register(String login, String password, String name,
+                                       int sex, int age) {
+        Log.d(TAG, "register: " + login);
+        final PublishSubject<String> registerSubject = PublishSubject.create();
+        Subscription orderSubscription =
+                orderServiceSubject.subscribe(new Action1<ApiService>() {
+                    @Override
+                    public void call(ApiService apiService) {
+                        compositeSubscription.add(apiService
+                                .register(login, password, name, sex, age));
+                    }
+                }, new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        registerSubject.onError(throwable);
+                    }
+                });
+
+        compositeSubscription.add(orderSubscription);
+
+        return registerSubject.asObservable();
     }
 
     public void close() throws Exception {

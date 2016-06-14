@@ -5,6 +5,7 @@ import android.content.Context;
 
 import com.grishberg.viper_rest_android.data.RxApiService;
 import com.grishberg.viper_rest_android.data.RxOrderServiceImpl;
+import com.grishberg.viper_rest_android.domain.interfaces.AuthStorageService;
 import com.grishberg.viper_rest_android.presentation.main.App;
 
 import javax.inject.Singleton;
@@ -35,5 +36,4 @@ public class AppModule {
         //application.getApplicationContext()
         return new RxOrderServiceImpl();
     }
-
 }

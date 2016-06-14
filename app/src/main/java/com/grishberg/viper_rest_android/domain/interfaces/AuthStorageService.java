@@ -5,5 +5,5 @@ package com.grishberg.viper_rest_android.domain.interfaces;
  */
 public interface AuthStorageService {
     String getRefreshToken();
-    String setRefreshToken(String refreshToken);
+    void setRefreshToken(String refreshToken);
 }
