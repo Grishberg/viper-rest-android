@@ -170,46 +170,25 @@ public class ApiService extends BaseService {
 
     /**
      * Запрос на регистрацию, выполняется НЕ в UI потоке
-     * @param observer наблюдатель для вывода результата и ошибок
      * @param registrationContainer параметры для регистрации
      */
-    public void register(Subscriber<? super String> observer,
-                           RegistrationContainer registrationContainer) {
-
-        Throwable lastError = null;
-        for (int i = 0; i < RETRY_COUNT_FOR_REQUEST; i++) {
-            try {
-                Call<AuthResponse> responseCall = retrofitService
-                        .register(registrationContainer.getLogin(),
-                                registrationContainer.getPassword(),
-                                registrationContainer.getName(),
-                                registrationContainer.getSex(),
-                                registrationContainer.getAge());
-                Response<AuthResponse> response = responseCall.execute();
-                AuthResponse responseBody = response.body();
-                if (responseBody != null && !responseBody.isSuccess()) {
-                    lastError = new BadAccessTokenException(responseBody.getErrorString());
-                    observer.onError(lastError);
-                    continue;
-                }
-                if (responseBody == null || responseBody.getResult() == null) {
-                    lastError = new NullPointerException();
-                    observer.onError(lastError);
-                    continue;
-                }
-                // обновить токен в сервисе для дальнейшей работы
-                accessToken = responseBody.getResult().getAccessToken();
-                // передать результат
-                observer.onNext(responseBody.getResult().getRefreshToken());
-                observer.onCompleted();
-                return;
-            } catch (IOException e) {
-                Log.e(TAG, "register: ", e);
-                lastError = e;
-            }
-        }
-        observer.onError(lastError);
-        observer.onCompleted();
+    public Observable<String> register(RegistrationContainer registrationContainer) {
+        return createRegisterRequestObservable(registrationContainer)
+                .timeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS) //поставили таймаут
+                .retry(RETRY_COUNT_FOR_REQUEST) //поставили кол-во повторов
+                .onErrorReturn(new Func1<Throwable, String>() {
+                    @Override
+                    public String call(Throwable throwable) {
+                        Log.e(TAG, "call: ", throwable);
+                        return null;
+                    }
+                })
+                .doOnError(new Action1<Throwable>() {
+                    @Override
+                    public void call(Throwable throwable) {
+                        Log.e(TAG, "call: ", throwable);
+                    }
+                });
     }
 
     private Observable<String> createAuthRequestObservable(String login, String password) {
@@ -242,32 +221,26 @@ public class ApiService extends BaseService {
     /**
      * Создать Observable для регистрации нового пользователя
      *
-     * @param login
-     * @param password
-     * @param name
-     * @param sex
-     * @param age
      * @return
      */
-    private Observable<String> createRegisterRequestObservable(String login,
-                                                               String password,
-                                                               String name,
-                                                               int sex,
-                                                               int age
-    ) {
+    private Observable<String> createRegisterRequestObservable(RegistrationContainer registrationContainer) {
         return Observable.create(new Observable.OnSubscribe<String>() {
             @Override
             public void call(Subscriber<? super String> subscriber) {
                 try {
                     Call<AuthResponse> responseCall = retrofitService
-                            .register(login, password, name, sex, age);
+                            .register(registrationContainer.getLogin(),
+                                    registrationContainer.getPassword(),
+                                    registrationContainer.getName(),
+                                    registrationContainer.getSex(),
+                                    registrationContainer.getAge());
                     Response<AuthResponse> response = responseCall.execute();
                     AuthResponse responseBody = response.body();
                     if (responseBody != null && !responseBody.isSuccess()) {
                         subscriber.onError(new BadAccessTokenException(responseBody.getErrorString()));
                         return;
                     }
-                    if (responseBody == null) {
+                    if (responseBody == null || responseBody.getResult() == null) {
                         subscriber.onError(new NullPointerException());
                         return;
                     }

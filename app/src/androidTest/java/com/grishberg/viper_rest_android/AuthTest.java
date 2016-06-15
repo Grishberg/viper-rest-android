@@ -22,6 +22,8 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 
+import rx.Scheduler;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;

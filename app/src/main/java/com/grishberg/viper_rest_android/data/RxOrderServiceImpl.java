@@ -8,18 +8,27 @@ import android.os.IBinder;
 import android.util.Log;
 
 import com.grishberg.datafacade.data.ListResult;
+import com.grishberg.viper_rest_android.data.rest.errors.BadAccessTokenException;
+import com.grishberg.viper_rest_android.data.rest.response.AuthResponse;
 import com.grishberg.viper_rest_android.domain.models.RegistrationContainer;
 import com.grishberg.viper_rest_android.domain.models.Shop;
 import com.grishberg.viper_rest_android.domain.models.ShopService;
 import com.grishberg.viper_rest_android.domain.models.Specialist;
 import com.grishberg.viper_rest_android.presentation.main.App;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import javax.inject.Inject;
 
+import retrofit.Call;
+import retrofit.Response;
 import rx.Observable;
 import rx.Subscriber;
 import rx.Subscription;
 import rx.functions.Action1;
+import rx.functions.Func1;
+import rx.schedulers.Schedulers;
 import rx.subjects.BehaviorSubject;
 import rx.subjects.PublishSubject;
 import rx.subscriptions.CompositeSubscription;
@@ -78,7 +87,7 @@ public class RxOrderServiceImpl implements RxApiService {
     /**
      * Подождать пока не подключимся к севрису
      */
-    private void checkConnectionToService() {
+    private Boolean checkConnectionToService() {
         synchronized (monitor) {
             while (!isBound) {
                 try {
@@ -88,6 +97,7 @@ public class RxOrderServiceImpl implements RxApiService {
                 }
             }
         }
+        return isBound;
     }
 
     /**
@@ -148,25 +158,23 @@ public class RxOrderServiceImpl implements RxApiService {
         return authSubject.asObservable();
     }
 
+    /**
+     * Регистрация пользователя
+     * @param registrationContainer
+     * @return
+     */
     @Override
-    public Observable<String> register(RegistrationContainer registrationContainer) {
+    public Observable<String> register(final RegistrationContainer registrationContainer) {
         Log.d(TAG, "register: " + registrationContainer);
-
-        return Observable.create(new Observable.OnSubscribe<String>() {
-            @Override
-            public void call(Subscriber<? super String> observer) {
-                Log.d(TAG, "call: " + Thread.currentThread());
-                // проверить подключение к сервису, если не было - дождаться
-                checkConnectionToService();
-                try {
-                    if (!observer.isUnsubscribed()) {
-                        apiService.register(observer, registrationContainer);
-                    }
-                } catch (Exception e) {
-                    observer.onError(e);
-                }
-            }
-        });
+        // проверить подключение к сервису
+        Observable<String> observable = Observable.defer(() -> Observable.just(checkConnectionToService()))
+                        .flatMap(new Func1<Boolean, Observable<String>>() {
+                            @Override
+                            public Observable<String> call(Boolean connectionStatus) {
+                                return apiService.register(registrationContainer);
+                            }
+                        });
+        return observable;
     }
 
     public void close() throws Exception {
