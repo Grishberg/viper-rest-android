@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import com.grishberg.datafacade.data.ListResult;
@@ -101,6 +102,15 @@ public class RxOrderServiceImpl implements RxApiService {
     }
 
     /**
+     * Вернуть функцию ожидания подключения в качестве Observable
+     * @return
+     */
+    @NonNull
+    private Observable<Boolean> getCheckConnectionDefer() {
+        return Observable.defer(() -> Observable.just(checkConnectionToService()));
+    }
+
+    /**
      * Формирование Observable в ГЛАВНОМ потоке
      *
      * @return
@@ -139,23 +149,8 @@ public class RxOrderServiceImpl implements RxApiService {
     @Override
     public Observable<String> getAuth(String login, String password) {
         Log.d(TAG, "getAuth: " + login);
-        final PublishSubject<String> authSubject = PublishSubject.create();
-        Subscription orderSubscription =
-                orderServiceSubject.subscribe(new Action1<ApiService>() {
-                    @Override
-                    public void call(ApiService apiService) {
-                        compositeSubscription.add(apiService.auth(login, password));
-                    }
-                }, new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        authSubject.onError(throwable);
-                    }
-                });
-
-        compositeSubscription.add(orderSubscription);
-
-        return authSubject.asObservable();
+        return getCheckConnectionDefer()
+                .flatMap(connectionStatus -> apiService.auth(login, password));
     }
 
     /**
@@ -166,15 +161,8 @@ public class RxOrderServiceImpl implements RxApiService {
     @Override
     public Observable<String> register(final RegistrationContainer registrationContainer) {
         Log.d(TAG, "register: " + registrationContainer);
-        // проверить подключение к сервису
-        Observable<String> observable = Observable.defer(() -> Observable.just(checkConnectionToService()))
-                        .flatMap(new Func1<Boolean, Observable<String>>() {
-                            @Override
-                            public Observable<String> call(Boolean connectionStatus) {
-                                return apiService.register(registrationContainer);
-                            }
-                        });
-        return observable;
+        return getCheckConnectionDefer()
+                        .flatMap(connectionStatus -> apiService.register(registrationContainer));
     }
 
     public void close() throws Exception {

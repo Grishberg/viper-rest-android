@@ -26,9 +26,10 @@ import retrofit.Retrofit;
 @Module
 public class TestRestModule extends RestModule {
     private static final String TAG = TestRestModule.class.getSimpleName();
-
-    public TestRestModule(String baseUrl) {
+    private boolean isSuccessResponses;
+    public TestRestModule(String baseUrl, boolean isSuccessResponses) {
         super(baseUrl);
+        this.isSuccessResponses = isSuccessResponses;
     }
 
     /**
@@ -38,7 +39,7 @@ public class TestRestModule extends RestModule {
      */
     @Override
     Interceptor provideInterceptor() {
-        TestStubInterceptor interceptor = new TestStubInterceptor();
+        TestStubInterceptor interceptor = new TestStubInterceptor(isSuccessResponses);
         return interceptor;
     }
 }

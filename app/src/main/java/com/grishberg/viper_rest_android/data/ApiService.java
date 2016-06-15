@@ -9,6 +9,9 @@ import com.grishberg.datafacade.data.ListResult;
 import com.grishberg.datafacade.service.BaseService;
 import com.grishberg.viper_rest_android.data.rest.RestRetrofitService;
 import com.grishberg.viper_rest_android.data.rest.errors.BadAccessTokenException;
+import com.grishberg.viper_rest_android.data.rest.errors.BadRequestException;
+import com.grishberg.viper_rest_android.data.rest.errors.BadServerResponse;
+import com.grishberg.viper_rest_android.data.rest.errors.BadСredentialsException;
 import com.grishberg.viper_rest_android.data.rest.response.AuthResponse;
 import com.grishberg.viper_rest_android.data.rest.response.ShopsResponse;
 import com.grishberg.viper_rest_android.domain.ApiConst;
@@ -20,6 +23,7 @@ import com.grishberg.viper_rest_android.presentation.main.App;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -141,54 +145,43 @@ public class ApiService extends BaseService {
     }
 
     //------------------ AUTH --------------------
-    public Subscription auth(String login, String password) {
-        final Subscription subscription =
-                createAuthRequestObservable(login, password)//создали Observable с запросом
-                        .timeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS) //поставили таймаут
-                        .retry(RETRY_COUNT_FOR_REQUEST) //поставили кол-во повторов
-                        .onErrorReturn(new Func1<Throwable, String>() {
-                            @Override
-                            public String call(Throwable throwable) {
-                                Log.e(TAG, "call: ", throwable);
-                                return null;
-                            }
-                        })
-                        .doOnError(new Action1<Throwable>() {
-                            @Override
-                            public void call(Throwable throwable) {
-                                Log.e(TAG, "call: ", throwable);
-                                if (throwable instanceof BadAccessTokenException) {
-                                    //Нужно обновить токен
-                                }
-                            }
-                        })
-                        .subscribeOn(Schedulers.computation())
-                        .subscribe();
 
-        return subscription;
+    /**
+     * Запрос авторизации
+     *
+     * @param login    логин на севрере
+     * @param password пароль
+     * @return возвращается refreshToken в случае успеха, иначе null
+     */
+    public Observable<String> auth(String login, String password) {
+        return createAuthRequestObservable(login, password)//создали Observable с запросом
+                .timeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS) //поставили таймаут
+                .retry(RETRY_COUNT_FOR_REQUEST) //поставили кол-во повторов
+                .onErrorReturn(throwable -> {
+                    Log.e(TAG, "onErrorReturn: ", throwable);
+                    return null;
+                })
+                .doOnError(throwable -> {
+                    Log.e(TAG, "doOnError: ", throwable);
+                });
     }
 
     /**
-     * Запрос на регистрацию, выполняется НЕ в UI потоке
+     * Запрос на регистрацию
+     *
      * @param registrationContainer параметры для регистрации
+     * @return возвращается refreshToken в случае успеха, иначе null
      */
     public Observable<String> register(RegistrationContainer registrationContainer) {
         return createRegisterRequestObservable(registrationContainer)
                 .timeout(TIMEOUT_IN_SECONDS, TimeUnit.SECONDS) //поставили таймаут
                 .retry(RETRY_COUNT_FOR_REQUEST) //поставили кол-во повторов
-                .onErrorReturn(new Func1<Throwable, String>() {
-                    @Override
-                    public String call(Throwable throwable) {
-                        Log.e(TAG, "call: ", throwable);
-                        return null;
-                    }
+                .onErrorReturn(throwable -> {
+                    // Вернуть результат после неудачных попыток
+                    Log.e(TAG, "onErrorReturn: ", throwable);
+                    return null;
                 })
-                .doOnError(new Action1<Throwable>() {
-                    @Override
-                    public void call(Throwable throwable) {
-                        Log.e(TAG, "call: ", throwable);
-                    }
-                });
+                .doOnError(throwable -> Log.e(TAG, "doOnError: ", throwable));
     }
 
     private Observable<String> createAuthRequestObservable(String login, String password) {
@@ -199,19 +192,21 @@ public class ApiService extends BaseService {
                     Call<AuthResponse> responseCall = retrofitService.auth(login, password);
                     Response<AuthResponse> response = responseCall.execute();
                     AuthResponse responseBody = response.body();
-                    if (responseBody != null && !responseBody.isSuccess()) {
-                        subscriber.onError(new BadAccessTokenException(responseBody.getErrorString()));
+                    if(response.code() == 403){
+                        // неверные учетные данные
+                        subscriber.onError(new BadСredentialsException(responseBody.getErrorString()));
+                        subscriber.onCompleted();
                         return;
                     }
-                    if (responseBody == null) {
-                        subscriber.onError(new NullPointerException());
+                    if (response.code() != 200 || responseBody == null) {
+                        subscriber.onError(new BadServerResponse());
                         return;
                     }
                     subscriber.onNext(responseBody.getResult().getRefreshToken());
                     accessToken = responseBody.getResult().getAccessToken();
                     subscriber.onCompleted();
                 } catch (IOException e) {
-                    Log.e(TAG, "call: ", e);
+                    Log.e(TAG, "createAuthRequestObservable call: ", e);
                     subscriber.onError(e);
                 }
             }
@@ -236,12 +231,10 @@ public class ApiService extends BaseService {
                                     registrationContainer.getAge());
                     Response<AuthResponse> response = responseCall.execute();
                     AuthResponse responseBody = response.body();
-                    if (responseBody != null && !responseBody.isSuccess()) {
-                        subscriber.onError(new BadAccessTokenException(responseBody.getErrorString()));
-                        return;
-                    }
-                    if (responseBody == null || responseBody.getResult() == null) {
-                        subscriber.onError(new NullPointerException());
+                    if (response.code() != 200) {
+                        subscriber.onError(new BadRequestException(
+                                String.format(Locale.US, "Response code = %d", response.code())));
+                        subscriber.onCompleted();
                         return;
                     }
                     subscriber.onNext(responseBody.getResult().getRefreshToken());

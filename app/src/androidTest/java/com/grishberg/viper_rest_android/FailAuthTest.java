@@ -22,19 +22,17 @@ import org.junit.runner.RunWith;
 
 import java.util.List;
 
-import rx.Scheduler;
-import rx.android.schedulers.AndroidSchedulers;
 import rx.observers.TestSubscriber;
 import rx.schedulers.Schedulers;
 import rx.schedulers.TestScheduler;
 
 /**
- * Created by grishberg on 13.06.16.
+ * Created by grishberg on 15.06.16.
  */
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class AuthTest {
-    private static final String TAG = AuthTest.class.getSimpleName();
+public class FailAuthTest {
+    private static final String TAG = FailAuthTest.class.getSimpleName();
     public static final String TEST_LOGIN = "test";
     public static final String TEST_PASSWORD = "test";
     public static final String TEST_NAME = "test";
@@ -51,12 +49,12 @@ public class AuthTest {
     public void setUp() throws Exception {
         App app = (App) InstrumentationRegistry.getTargetContext().getApplicationContext();
         app.initComponents(DaggerAppComponent
-                        .builder()
-                        .appModule(new AppModule(app))
-                        .restModule(new TestRestModule(HTTP_TEST_COM))
-                        .authStorageModule(new AuthStorageModule(app))
-                        .build()
-               );
+                .builder()
+                .appModule(new AppModule(app))
+                .restModule(new TestRestModule(HTTP_TEST_COM, false))
+                .authStorageModule(new AuthStorageModule(app))
+                .build()
+        );
     }
 
     /**
@@ -65,10 +63,8 @@ public class AuthTest {
      * @throws Exception
      */
     @Test
-    public void testRegister() throws Exception {
+    public void testFailRegister() throws Exception {
         RegisterDataProvider registerDataProvider = new RegisterDataProviderImpl();
-        int times = 10;
-        TestScheduler testScheduler = Schedulers.test();
         TestSubscriber<String> testSubscriber = new TestSubscriber<>();
 
         registerDataProvider
@@ -82,7 +78,6 @@ public class AuthTest {
         List<String> refreshToken = testSubscriber.getOnNextEvents();
 
         Assert.assertNotNull(refreshToken);
-        Assert.assertEquals("test refresh token not equals",
-                TestStubInterceptor.TEST_REFRESH_TOKEN, refreshToken.get(0));
+        Assert.assertNull("test refresh token not equals", refreshToken.get(0));
     }
 }
