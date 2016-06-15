@@ -4,8 +4,10 @@ import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.SmallTest;
 
+import com.grishberg.viper_rest_android.data.providers.AuthDataProviderImpl;
 import com.grishberg.viper_rest_android.data.providers.RegisterDataProviderImpl;
 import com.grishberg.viper_rest_android.data.rest.TestStubInterceptor;
+import com.grishberg.viper_rest_android.domain.interfaces.auth.AuthDataProvider;
 import com.grishberg.viper_rest_android.domain.interfaces.auth.RegisterDataProvider;
 import com.grishberg.viper_rest_android.domain.models.RegistrationContainer;
 import com.grishberg.viper_rest_android.presentation.injection.AppModule;
@@ -76,6 +78,28 @@ public class FailAuthTest {
 
         testSubscriber.assertNoErrors();
         List<String> refreshToken = testSubscriber.getOnNextEvents();
+
+        Assert.assertNotNull(refreshToken);
+        Assert.assertNull("test refresh token not equals", refreshToken.get(0));
+    }
+
+    /**
+     * Тестирование неуспешной вторизации
+     * @throws Exception
+     */
+    @Test
+    public void testFailAuth() throws Exception {
+        AuthDataProvider authDataProvider = new AuthDataProviderImpl();
+        TestSubscriber<String> testSubscriber = new TestSubscriber<>();
+
+        authDataProvider
+                .checkAuth(TEST_LOGIN,
+                        TEST_PASSWORD)
+                .subscribe(testSubscriber);
+
+        testSubscriber.assertNoErrors();
+        List<String> refreshToken = testSubscriber.getOnNextEvents();
+
 
         Assert.assertNotNull(refreshToken);
         Assert.assertNull("test refresh token not equals", refreshToken.get(0));

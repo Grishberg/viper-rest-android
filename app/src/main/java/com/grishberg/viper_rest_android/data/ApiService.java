@@ -179,6 +179,10 @@ public class ApiService extends BaseService {
                 .onErrorReturn(throwable -> {
                     // Вернуть результат после неудачных попыток
                     Log.e(TAG, "onErrorReturn: ", throwable);
+                    if(throwable instanceof BadСredentialsException){
+                        // если неверные учетные данные - вернуть пустую строку
+                        return "";
+                    }
                     return null;
                 })
                 .doOnError(throwable -> Log.e(TAG, "doOnError: ", throwable));
